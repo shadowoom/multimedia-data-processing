@@ -1,14 +1,14 @@
 package com.i2r.utils;
 
 import com.i2r.object.Transcript;
+import com.i2r.object.Transcripts;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * multimedia-data-processing
@@ -18,100 +18,73 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 
 @Slf4j
-public class GenerateRelevantFile {
+public class GenerateRelevantFile{
 
-    private List<Transcript> transcriptList;
+    private Transcripts transcripts;
 
     private static final String ffmpegPath = "../ffmpeg/bin/ffmpeg";
 
-    public GenerateRelevantFile(List<Transcript> transcriptList) {
-        this.transcriptList = transcriptList;
+    public GenerateRelevantFile(Transcripts transcripts) {
+        this.transcripts = transcripts;
     }
 
-    public void fileGeneration() {
+    public void fileGeneration() throws IOException {
         // variables declaration
         String parentFolderPath = "../../dialogue-data/";
-        String languge, sentiment;
-        String inputAudioFilePath, inputVideoFilePath;
-        File outputAudioDirectoryPath, outputVideoDirectoryPath, outputTextDirectoryPath;
-        String outputAudioFilePath, outputVideoFilePath, outputTextFilePath;
+
         String audioGenerationCommand, videoGenerationCommand;
-        Process pr1;
-        Process pr2;
-        ReentrantLock lock = new ReentrantLock();
 
+        List<Transcript> transcriptList = transcripts.getTranscripts();
 
-        // generate dialogue data
-        log.info("Start generation dialogue data process ------------------------------------");
         Collections.sort(transcriptList, comparator);
-
         for(int i = 0; i < transcriptList.size(); i++) {
             transcriptList.get(i).setSequence(String.valueOf(i+1));
-            log.info("start processing object: {} ", transcriptList.get(i));
-            // setup input and output filepath
-            inputAudioFilePath = transcriptList.get(i).getInputPath()+".wav";
-            log.info("input audio file path: {}", inputAudioFilePath);
-            inputVideoFilePath = transcriptList.get(i).getInputPath()+".mp4";
-            log.info("input video file path: {}", inputVideoFilePath);
-
-            outputAudioDirectoryPath =  new File(parentFolderPath + "wav/" + transcriptList.get(i).getName());
-            outputVideoDirectoryPath  = new File(parentFolderPath + "video/" + transcriptList.get(i).getName());
-            if(!outputAudioDirectoryPath.exists()) {
-                outputAudioDirectoryPath.mkdir();
-            }
-            if(!outputVideoDirectoryPath.exists()) {
-                outputVideoDirectoryPath.mkdir();
-            }
-
-            outputAudioFilePath = outputAudioDirectoryPath.getPath() + "/" +  transcriptList.get(i).getSequence() +".wav";
-            log.info("output audio file path: {}", outputAudioFilePath);
-
-            outputVideoFilePath = outputVideoDirectoryPath.getPath() + "/" +  transcriptList.get(i).getSequence()+".mp4";
-            log.info("output video file path: {}", outputVideoFilePath);
-
-            Runtime rt = Runtime.getRuntime();
-
-            try {
-                // generate data files
-                audioGenerationCommand = ffmpegPath + " -i " + inputAudioFilePath + " -ss " + transcriptList.get(i).getStartTime()
-                        + " -to " + transcriptList.get(i).getEndTime() + " -c copy " + outputAudioFilePath;
-                lock.lock();
-                pr1 = rt.exec(audioGenerationCommand);
-                log.info("generate audio file command: {}", audioGenerationCommand);
-                videoGenerationCommand = ffmpegPath + " -i " + inputVideoFilePath + " -ss " + transcriptList.get(i).getStartTime()
-                        + " -to " + transcriptList.get(i).getEndTime() + " -c copy " + outputVideoFilePath;
-                pr2 = rt.exec(videoGenerationCommand);
-                log.info("generate video file command: {}", videoGenerationCommand);
-                transcriptList.get(i).setOutputAudioPath(outputAudioFilePath);
-                transcriptList.get(i).setOutputVideoPath(outputVideoFilePath);
-                lock.unlock();
-            } catch (Exception e) {
-                log.error("problems with generating audio/video files for {} error: {} ", transcriptList.get(i).getInputPath(), e);
-            }
-            log.info("finish generating emotion data files for object: {}", transcriptList.get(i));
+            transcriptList.get(i).setName("utterance_" + transcriptList.get(i).getSequence());
         }
 
-        // generate text data files
-        outputTextDirectoryPath = new File(parentFolderPath + "text/" + transcriptList.get(0).getName());
+        log.info("Start generation data process -----------------------------------------------------------------------");
+
+        // setup input files path
+        log.info("Start setting up input file path---------------------------------------------------------------------");
+        String inputAudioFilePath = transcripts.getInputPath()+".wav";
+        log.info("Input audio file path: {}", inputAudioFilePath);
+        String inputVideoFilePath = transcripts.getInputPath()+".mp4";
+        log.info("Input video file path: {}", inputVideoFilePath);
+        log.info("Done Setting up input file path----------------------------------------------------------------------");
+
+        // setup dialogue output folder path
+        log.info("Start setting output audio and video folder path for dialogue data-----------------------------------");
+        File outputAudioDirectoryPath =  new File(parentFolderPath + "audio/" + transcripts.getId());
+        File outputVideoDirectoryPath  = new File(parentFolderPath + "video/" + transcripts.getId());
+        File outputTextDirectoryPath = new File(parentFolderPath + "text/" + transcripts.getId());
+        if(!outputAudioDirectoryPath.exists()) {
+            outputAudioDirectoryPath.mkdir();
+        }
+        if(!outputVideoDirectoryPath.exists()) {
+            outputVideoDirectoryPath.mkdir();
+        }
         if(!outputTextDirectoryPath.exists()) {
             outputTextDirectoryPath.mkdir();
         }
-        outputTextFilePath = outputTextDirectoryPath.getPath() + "/" + transcriptList.get(0).getName() + ".xml";
-        try {
-            XMLMapper.listToXML(outputTextFilePath, transcriptList);
-        } catch (Exception e) {
-            log.error("problems with generating text files for {} error: {} ", transcriptList.get(0).getName(), e);
-        }
-        log.info("end generation dialogue data process ------------------------------------");
-        log.info("--------------------------------------------------------------------------");
+        transcripts.setAudioOutputLocation(outputAudioDirectoryPath.getCanonicalPath());
+        transcripts.setVideoOutputLocation(outputVideoDirectoryPath.getCanonicalPath());
+        log.info("Done setting output audio and video folder path for dialogue data------------------------------------");
 
-        // generate emotion data
-        log.info("Start generation emotion data process ------------------------------------");
         for(Transcript transcript : transcriptList) {
-            languge = transcript.getLanguage();
-            sentiment = transcript.getSentiment();
-            parentFolderPath = "";
-            switch (languge) {
+            log.info("Start processing object: {} ", transcript);
+
+            log.info("Start setting output audio and video file path for dialogue data for {} -------------------------", transcript.getName());
+            String outputAudioFilePath = outputAudioDirectoryPath.getPath() + "/" + transcript.getName() +".wav";
+            log.info("output audio file path: {}", outputAudioFilePath);
+            String outputVideoFilePath = outputVideoDirectoryPath.getPath() + "/" + transcript.getName() +".mp4";
+            log.info("output video file path: {}", outputVideoFilePath);
+            log.info("Done setting output audio and video file path for dialogue data for {} --------------------------", transcript.getName());
+
+            // setup emotion output files path
+            log.info("Start setting output audio and video file path for emotion data for {} --------------------------", transcript.getName());
+            String language = transcript.getLanguage();
+            String sentiment = transcript.getSentiment();
+            switch (language) {
                 case "english":
                     parentFolderPath = "../../english/";
                     break;
@@ -122,12 +95,6 @@ public class GenerateRelevantFile {
                     parentFolderPath ="../../mixture/";
                     break;
             }
-            log.info("start processing object: {} ", transcript);
-            // setup input and output filepath
-            inputAudioFilePath = transcript.getInputPath()+".wav";
-            log.info("input audio file path: {}", inputAudioFilePath);
-            inputVideoFilePath = transcript.getInputPath()+".mp4";
-            log.info("input video file path: {}", inputVideoFilePath);
             switch (sentiment) {
                 case "happiness":
                     parentFolderPath = parentFolderPath + "emotion-data/happiness/";
@@ -147,49 +114,84 @@ public class GenerateRelevantFile {
                 case "anger":
                     parentFolderPath = parentFolderPath + "emotion-data/anger/";
                     break;
+                case "fear":
+                    parentFolderPath = parentFolderPath + "emotion-data/fear/";
+                    break;
             }
-            outputAudioDirectoryPath =  new File(parentFolderPath + "wav/" + transcript.getName());
-            outputVideoDirectoryPath = new File(parentFolderPath + "video/" + transcript.getName());
-            outputTextDirectoryPath = new File(parentFolderPath + "text/" + transcript.getName());
-            if(!outputAudioDirectoryPath.exists()) {
-                outputAudioDirectoryPath.mkdir();
-            }
-            if(!outputVideoDirectoryPath.exists()) {
-                outputVideoDirectoryPath.mkdir();
-            }
-            if(!outputTextDirectoryPath.exists()) {
-                outputTextDirectoryPath.mkdir();
-            }
-            outputAudioFilePath = outputAudioDirectoryPath.getPath() + "/" +  transcript.getId() +".wav";
-            log.info("output audio file path: {}", outputAudioFilePath);
 
-            outputVideoFilePath = outputVideoDirectoryPath.getPath() + "/" +  transcript.getId()+".mp4";
-            log.info("output video file path: {}", outputVideoFilePath);
+            File emotionOutputAudioDirectoryPath =  new File(parentFolderPath + "audio/" + transcripts.getId());
+            File emotionOutputVideoDirectoryPath = new File(parentFolderPath + "video/" + transcripts.getId());
+            File emotionOutputTextDirectoryPath = new File(parentFolderPath + "text/" + transcripts.getId());
+            if(!emotionOutputAudioDirectoryPath.exists()) {
+                emotionOutputAudioDirectoryPath.mkdir();
+            }
+            if(!emotionOutputVideoDirectoryPath.exists()) {
+                emotionOutputVideoDirectoryPath.mkdir();
+            }
+            if(!emotionOutputTextDirectoryPath.exists()) {
+                emotionOutputTextDirectoryPath.mkdir();
+            }
+            String emotionOutputAudioFilePath = emotionOutputAudioDirectoryPath.getCanonicalPath() + "/" +  transcript.getName() +".wav";
+            log.info("output audio file path: {}", emotionOutputAudioFilePath);
 
-            outputTextFilePath = outputTextDirectoryPath.getPath() + "/" +  transcript.getId() + ".xml";
-            log.info("output text file path: {}", outputTextFilePath);
+            String emotionOutputVideoFilePath = emotionOutputVideoDirectoryPath.getCanonicalPath() + "/" +  transcript.getName()+".mp4";
+            log.info("output video file path: {}", emotionOutputVideoFilePath);
+
+            String emotionOutputTextFilePath = emotionOutputTextDirectoryPath.getCanonicalPath() + "/" +  transcript.getName() + ".xml";
+            log.info("output text file path: {}", emotionOutputTextFilePath);
+            transcript.setAudioOutputLocation(emotionOutputAudioFilePath);
+            transcript.setVideoOutputLocation(emotionOutputVideoFilePath);
+            log.info("Done setting output audio and video file path for emotion data-----------------------------------");
+
+            log.info("Start audio segementation for {} ----------------------------------------------------------------", transcript.getName());
+            // generate audio files
+            // command format ffmpeg -i file.mkv -ss 00:00:20 -to 00:00:40 -c copy file-2.mkv
+            audioGenerationCommand = ffmpegPath  + " -i " + inputAudioFilePath + " -ss " + transcript.getStartTime()
+                        + " -to " + transcript.getEndTime() + " -c copy " + outputAudioFilePath
+                        + " " + emotionOutputAudioFilePath;
+            log.info("generate audio file command: {}", audioGenerationCommand);
             Runtime rt = Runtime.getRuntime();
-            try {
-                // generate data files
-                audioGenerationCommand = ffmpegPath + " -i " + inputAudioFilePath + " -ss " + transcript.getStartTime()
-                        + " -to " + transcript.getEndTime() + " -c copy " + outputAudioFilePath;
-                lock.lock();
-                pr1 = rt.exec(audioGenerationCommand);
-                log.info("generate audio file command: {}", audioGenerationCommand);
-                videoGenerationCommand = ffmpegPath + " -i " + inputVideoFilePath + " -ss " + transcript.getStartTime()
-                        + " -to " + transcript.getEndTime() + " -c copy " + outputVideoFilePath;
-                pr2 = rt.exec(videoGenerationCommand);
-                log.info("generate video file command: {}", videoGenerationCommand);
-                // generate text data files
-                transcript.setOutputAudioPath(outputAudioFilePath);
-                transcript.setOutputVideoPath(outputVideoFilePath);
-                XMLMapper.objToXML(outputTextFilePath, transcript);
-                lock.unlock();
-            } catch (Exception e) {
-                log.warn("problems with generating files for {} error: {} ", transcript.getInputPath(), e);
+            Process p1;
+            try{
+                p1 = rt.exec(audioGenerationCommand);
+            } catch (IOException e) {
+                log.error("problems with generating audio files for {} error: {} ", transcript.getName(), e);
             }
-            log.info("finish generating emotion data files for object: {}", transcript);
+            log.info("Done audio segementation for {} -----------------------------------------------------------------", transcript.getName());
+
+            log.info("Start video segementation- for {} ---------------------------------------------------------------", transcript.getName());
+            // generate video files
+            videoGenerationCommand = ffmpegPath + " -y -i " + inputVideoFilePath + " -ss " + transcript.getStartTime()
+                    + " -to " + transcript.getEndTime() + " -c:v libx264 -preset superfast -an " + outputVideoFilePath
+                    + " " + emotionOutputVideoFilePath;
+            log.info("generate video file command: {}", videoGenerationCommand);
+            Process p2;
+            try {
+                p2 = rt.exec(videoGenerationCommand);
+            } catch (IOException e) {
+                log.error("problems with generating video files for {} error: {} ", transcript.getName(), e);
+            }
+            log.info("Done video segementation for {} -----------------------------------------------------------------", transcript.getName());
+
+            log.info("Start individual transcript file generation for {} ----------------------------------------------", transcript.getName());
+            XMLMapper.objToXML(emotionOutputTextFilePath, transcript);
+            log.info("Done individual transcript file generation for {} -----------------------------------------------", transcript.getName());
         }
+
+        log.info("Start full transcript file generation----------------------------------------------------------------");
+        // generate text data files
+        for(Transcript transcript : transcriptList) {
+            transcript.setVideoOutputLocation(outputVideoDirectoryPath.getCanonicalPath());
+            transcript.setAudioOutputLocation(outputAudioDirectoryPath.getCanonicalPath());
+        }
+        String outputTextFilePath = outputTextDirectoryPath.getPath() + "/" + transcripts.getId() + ".xml";
+        try {
+            XMLMapper.listToXML(outputTextFilePath, transcriptList);
+        } catch (Exception e) {
+            log.error("problems with generating full text file, error: {} ", e);
+        }
+        log.info("Done full transcript file generation-----------------------------------------------------------------");
+        log.info("Done generation data process ------------------------------------------------------------------------");
     }
 
     private Comparator<Transcript> comparator = new Comparator<Transcript>() {

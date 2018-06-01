@@ -20,8 +20,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Setter
 public class Transcript {
 
-    private String id;
-
     private String speaker;
 
     private String name;
@@ -38,11 +36,12 @@ public class Transcript {
 
     private String duration;
 
-    private String inputPath;
-
-    private String outputAudioPath;
-
-    private String outputVideoPath;
-
     private String sequence;
+
+    private String audioOutputLocation;
+
+    private String videoOutputLocation;
+
+    private String link;
+
 }

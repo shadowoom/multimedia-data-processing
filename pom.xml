@@ -91,6 +91,13 @@
       <version>2.2-promoted-b65</version>
     </dependency>
 
+    <!-- ffmpeg wrapper -->
+    <dependency>
+      <groupId>net.bramp.ffmpeg</groupId>
+      <artifactId>ffmpeg</artifactId>
+      <version>0.6.2</version>
+    </dependency>
+
   </dependencies>
 
 

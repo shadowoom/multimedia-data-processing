@@ -2,6 +2,7 @@ package com.i2r.utils;
 
 import com.i2r.Common.Language;
 import com.i2r.object.Transcript;
+import com.i2r.object.Transcripts;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -21,14 +22,16 @@ public class ReadTxtInput {
 
     private String inputPath;
 
-    private String inputName;
-
-    public ReadTxtInput(String inputPath, String inputName) {
+    public ReadTxtInput(String inputPath) {
         this.inputPath = inputPath;
-        this.inputName = inputName;
     }
 
-    public List<Transcript> read() throws IOException {
+    public Transcripts read() throws IOException {
+
+        Transcripts transcripts = new Transcripts();
+        String uuid = UUID.randomUUID().toString().replace("-","");
+        transcripts.setId(uuid);
+
         List<Transcript> transcriptList = new ArrayList<>();
         log.info("Read file {} ", inputPath);
         File file = new File(inputPath);
@@ -36,11 +39,16 @@ public class ReadTxtInput {
         if(file.exists()) {
             FileReader fileReader = new FileReader(file);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
+            String link = bufferedReader.readLine();
+            if(link != null) {
+                transcripts.setLink(link.trim());
+            }
+            String path = inputPath.substring(0, inputPath.lastIndexOf("."));
+            transcripts.setInputPath(inputPath);
             String line;
             while((line = bufferedReader.readLine()) != null) {
                 log.info("line text: {} ", line);
-                String[] temp = line.split("\t");
-                String uuid = UUID.randomUUID().toString().replace("-","");
+                String[] temp = line.trim().split("\t");
                 String speaker = temp[0];
                 String startTime = temp[1];
                 String endTime =  temp[2];
@@ -49,24 +57,22 @@ public class ReadTxtInput {
                 String sentiment = temp[4].substring(1, temp[4].indexOf("-"));
                 String languageCode = temp[4].substring(temp[4].indexOf("-")+ 1, temp[4].indexOf("-")+ 2);
                 String language = Language.getLanguage(Integer.parseInt(languageCode));
-                String path = inputPath.substring(0, inputPath.lastIndexOf("."));
                 Transcript transcript = new Transcript();
-                transcript.setId(uuid);
                 transcript.setSpeaker(speaker);
-                transcript.setName(inputName);
                 transcript.setStartTime(startTime);
                 transcript.setEndTime(endTime);
                 transcript.setText(text);
                 transcript.setSentiment(sentiment);
                 transcript.setLanguage(language);
                 transcript.setDuration(duration);
-                transcript.setInputPath(path);
+                transcript.setLink(link);
                 log.info("read in transcript: {} ", transcript);
                 transcriptList.add(transcript);
             }
             fileReader.close();
         }
-        return transcriptList;
+        transcripts.setTranscripts(transcriptList);
+        return transcripts;
     }
 
 }

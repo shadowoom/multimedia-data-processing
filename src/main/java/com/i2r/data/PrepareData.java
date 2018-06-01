@@ -1,6 +1,7 @@
-package com.i2r.main;
+package com.i2r.data;
 
 import com.i2r.object.Transcript;
+import com.i2r.object.Transcripts;
 import com.i2r.utils.GenerateRelevantFile;
 import com.i2r.utils.ReadTxtInput;
 import com.i2r.utils.VideoToAudio;
@@ -8,9 +9,9 @@ import com.i2r.utils.VideoToAudio;
 import java.io.IOException;
 import java.util.List;
 
-public class App 
+public class PrepareData
 {
-//    public static void main(String[] args) {
+//    public static void data(String[] args) {
 //        //Create video chunk
 //        int startSecs = 10;
 //        String startTime = convertSecsToTimeString(startSecs);
@@ -42,17 +43,27 @@ public class App
 //        return timeString;
 //    }
 
+
+
     public static void main(String[] args) throws IOException{
-        //VideoToAudio.convertVideoToAudio("D:/ZhangChen/I2R-Data-Collection/source/2/2.mp4");
-        if(args.length != 2) {
+
+        // convert video to audio
+        if(args.length == 1) {
+            if(args[0].contains("mp4")) {
+                String inputPathName = args[0];
+                VideoToAudio.convertVideoToAudio(inputPathName);
+            }
+            else {
+                String inputPathName = args[0];
+                ReadTxtInput readTxtInput = new ReadTxtInput(inputPathName);
+                Transcripts transcripts = readTxtInput.read();
+                GenerateRelevantFile generateRelevantFile = new GenerateRelevantFile(transcripts);
+                generateRelevantFile.fileGeneration();
+            }
+        }
+        else {
             throw new IllegalArgumentException("Please enter input file path and input name");
         }
-        String inputPathName = args[0];
-        String inputName = args[1];
-        ReadTxtInput readTxtInput = new ReadTxtInput(inputPathName, inputName);
-        List<Transcript> transcriptList = readTxtInput.read();
-        GenerateRelevantFile generateRelevantFile = new GenerateRelevantFile(transcriptList);
-        generateRelevantFile.fileGeneration();
     }
 
 }
