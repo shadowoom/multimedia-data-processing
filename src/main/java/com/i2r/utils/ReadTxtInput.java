@@ -33,9 +33,9 @@ public class ReadTxtInput {
         transcripts.setId(uuid);
 
         List<Transcript> transcriptList = new ArrayList<>();
-        log.info("Read file {} ", inputPath);
+        log.info("\nRead file {} \n", inputPath);
         File file = new File(inputPath);
-        log.info("Start reading in file: ");
+        log.info("\nStart reading in file: \n");
         if(file.exists()) {
             FileReader fileReader = new FileReader(file);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -44,10 +44,10 @@ public class ReadTxtInput {
                 transcripts.setLink(link.trim());
             }
             String path = inputPath.substring(0, inputPath.lastIndexOf("."));
-            transcripts.setInputPath(inputPath);
+            transcripts.setInputPath(path);
             String line;
             while((line = bufferedReader.readLine()) != null) {
-                log.info("line text: {} ", line);
+                log.info("\nline text: {} \n", line);
                 String[] temp = line.trim().split("\t");
                 String speaker = temp[0];
                 String startTime = temp[1];
@@ -66,7 +66,7 @@ public class ReadTxtInput {
                 transcript.setLanguage(language);
                 transcript.setDuration(duration);
                 transcript.setLink(link);
-                log.info("read in transcript: {} ", transcript);
+                log.info("\nread in transcript: {} \n", transcript);
                 transcriptList.add(transcript);
             }
             fileReader.close();

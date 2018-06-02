@@ -91,11 +91,11 @@
       <version>2.2-promoted-b65</version>
     </dependency>
 
-    <!-- ffmpeg wrapper -->
+    <!-- CSV -->
     <dependency>
-      <groupId>net.bramp.ffmpeg</groupId>
-      <artifactId>ffmpeg</artifactId>
-      <version>0.6.2</version>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-csv</artifactId>
+      <version>1.5</version>
     </dependency>
 
   </dependencies>
@@ -136,5 +136,15 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>8</source>
+          <target>8</target>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>

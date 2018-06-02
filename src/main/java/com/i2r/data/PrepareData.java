@@ -1,13 +1,10 @@
 package com.i2r.data;
 
-import com.i2r.object.Transcript;
 import com.i2r.object.Transcripts;
-import com.i2r.utils.GenerateRelevantFile;
 import com.i2r.utils.ReadTxtInput;
 import com.i2r.utils.VideoToAudio;
 
 import java.io.IOException;
-import java.util.List;
 
 public class PrepareData
 {
